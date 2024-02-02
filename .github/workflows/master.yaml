@@ -61,8 +61,8 @@ jobs:
           provenance: false
           push: true
           tags: |
-            provectuslabs/kafka-ui:${{ steps.build.outputs.version }}
-            provectuslabs/kafka-ui:master
+            hellices/kafka-ui:${{ steps.build.outputs.version }}
+            hellices/kafka-ui:master
           build-args: |
             JAR_FILE=kafka-ui-api-${{ steps.build.outputs.version }}.jar
           cache-from: type=local,src=/tmp/.buildx-cache
