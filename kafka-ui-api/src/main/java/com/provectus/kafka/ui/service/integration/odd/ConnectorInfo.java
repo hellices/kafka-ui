@@ -61,6 +61,9 @@ record ConnectorInfo(List<String> inputs,
 
     String connectionUrl = (String) config.get("connection.url");
     System.out.println("connectionUrl : " + connectionUrl);
+    System.out.println("url.startsWith(\"jdbc:\") : " + connectionUrl.startsWith("jdbc:"));
+    System.out.println("url.indexOf(58, \"jdbc:\".length()) != -1 : " + (connectionUrl.indexOf(58, "jdbc:".length()) != -1));
+    System.out.println("url != null : " + (connectionUrl != null));
     List<String> outputs = new ArrayList<>();
     @Nullable var knownJdbcPath = new JdbcUrlParser().parse(connectionUrl);
     if (knownJdbcPath instanceof PostgreSqlPath p) {
