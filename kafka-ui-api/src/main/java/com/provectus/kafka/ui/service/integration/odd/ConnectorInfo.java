@@ -60,6 +60,7 @@ record ConnectorInfo(List<String> inputs,
         .toList();
 
     String connectionUrl = (String) config.get("connection.url");
+    System.out.println("connectionUrl : " + connectionUrl);
     List<String> outputs = new ArrayList<>();
     @Nullable var knownJdbcPath = new JdbcUrlParser().parse(connectionUrl);
     if (knownJdbcPath instanceof PostgreSqlPath p) {
