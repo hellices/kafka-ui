@@ -12,6 +12,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.opendatadiscovery.oddrn.JdbcUrlParser;
 import org.opendatadiscovery.oddrn.model.HivePath;
 import org.opendatadiscovery.oddrn.model.MysqlPath;
+import org.opendatadiscovery.oddrn.model.OddrnPath;
 import org.opendatadiscovery.oddrn.model.PostgreSqlPath;
 import org.opendatadiscovery.oddrn.model.SnowflakePath;
 
@@ -60,10 +61,9 @@ record ConnectorInfo(List<String> inputs,
         .toList();
 
     String connectionUrl = (String) config.get("connection.url");
-    System.out.println("connectionUrl : " + connectionUrl);
-    System.out.println("url.startsWith(\"jdbc:\") : " + connectionUrl.startsWith("jdbc:"));
-    System.out.println("url.indexOf(58, \"jdbc:\".length()) != -1 : " + (connectionUrl.indexOf(58, "jdbc:".length()) != -1));
-    System.out.println("url != null : " + (connectionUrl != null));
+    if(connectionUrl.contains("oracle:thin")){
+      connectionUrl = connectionUrl.replace("@","");
+    }
     List<String> outputs = new ArrayList<>();
     @Nullable var knownJdbcPath = new JdbcUrlParser().parse(connectionUrl);
     if (knownJdbcPath instanceof PostgreSqlPath p) {
@@ -167,5 +167,54 @@ record ConnectorInfo(List<String> inputs,
         .map(topicOrrdnBuilder)
         .toList();
   }
+  public OddrnPath parse(String url, String user) {
+    if (url != null && url.startsWith("jdbc:") && url.indexOf(58, "jdbc:".length()) != -1) {
+      int separatorPos = url.indexOf("://", "jdbc:".length());
+      if (separatorPos == -1) {
+        throw new IllegalArgumentException("Invalid JDBC url.");
+      } else {
+        String urlSecondPart = url.substring(separatorPos + "://".length());
+        String driver = url.substring("jdbc:".length(), separatorPos);
+        int dbPos = urlSecondPart.indexOf("/");
+        int paramsPos = urlSecondPart.indexOf("?");
+        int semicolonParamsPos = urlSecondPart.indexOf(";");
+        if (semicolonParamsPos > 0 && semicolonParamsPos < paramsPos) {
+          paramsPos = semicolonParamsPos;
+        } else if (paramsPos == -1 && semicolonParamsPos > 0) {
+          paramsPos = semicolonParamsPos;
+        }
 
+        String host;
+        String database;
+        if (dbPos < 0 && paramsPos > 0) {
+          host = urlSecondPart.substring(0, paramsPos);
+          database = user;
+        } else if (dbPos > 0 && paramsPos > 0) {
+          host = urlSecondPart.substring(0, dbPos);
+          database = urlSecondPart.substring(dbPos + 1, paramsPos);
+        } else if (dbPos > 0 && paramsPos < 0) {
+          host = urlSecondPart.substring(0, dbPos);
+          database = urlSecondPart.substring(dbPos + 1);
+        } else {
+          host = urlSecondPart;
+          database = null;
+        }
+
+        JdbcUrlParser.HostUserPath hostUserPath = this.parseHostUserPath(host);
+        String generatedHost = hostUserPath.host;
+        String generatedUser = hostUserPath.user != null ? hostUserPath.user : user;
+        String generatedDatabase;
+        if ((database == null || database.isEmpty()) && generatedUser != null) {
+          generatedDatabase = generatedUser;
+        } else {
+          generatedDatabase = database;
+        }
+
+        return this.jdbcProcessors.path(driver, generatedHost, generatedDatabase);
+
+      }
+    } else {
+      throw new IllegalArgumentException("Invalid JDBC url.");
+    }
+  }
 }
