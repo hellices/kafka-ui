@@ -63,7 +63,7 @@ record ConnectorInfo(List<String> inputs,
     List<String> outputs = new ArrayList<>();
     @Nullable var knownJdbcPath = new JdbcUrlParser().parse(connectionUrl);
     if (knownJdbcPath instanceof PostgreSqlPath p) {
-      targetTables.forEach(t -> outputs.add(p.toBuilder().table(t).build().oddrn()));
+      targetTables.forEach(t -> outputs.add(p.toBuilder().table(t).schema("no_schema").build().oddrn()));
     }
     if (knownJdbcPath instanceof MysqlPath p) {
       targetTables.forEach(t -> outputs.add(p.toBuilder().table(t).build().oddrn()));
